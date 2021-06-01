@@ -7,6 +7,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 
@@ -30,6 +31,9 @@ class ResizerAppTest {
     private static final Integer AUDIO_COVER_HEIGHT = 1425;
     private static final Integer AUDIO_COVER_WIDTH = 1425;
 
+    private static final String TEST_IMAGE_SOURCE_NAME = "11.png";
+    private static final String TEST_IMAGE_TARGET_NAME = "11preview.png";
+
     @Test
     public void testReducingCover() throws Exception {
         final Integer reducedPreviewWidth = FILM_COVER_WIDTH - 500;
@@ -46,11 +50,10 @@ class ResizerAppTest {
         ResizerApp app = new ResizerApp();
         app.setInputFile(new File(absolutePathInput));
         app.setOutputFile(new File(absolutePathOutput));
-        app.setResizeWidth(reducedPreviewWidth);
-        app.setResizeHeight(reducedPreviewHeight);
-        app.setQuality(100);
+        app.setTargetWidth(reducedPreviewWidth);
+        app.setTargetHeight(reducedPreviewHeight);
+        app.setQuality(1.0);
         app.call();
-
         BufferedImage reducedPreview = ImageIO.read(new File(absolutePathOutput));
 
         assertEquals(reducedPreview.getWidth(), reducedPreviewWidth);
@@ -73,9 +76,9 @@ class ResizerAppTest {
         ResizerApp app = new ResizerApp();
         app.setInputFile(new File(absolutePathInput));
         app.setOutputFile(new File(absolutePathOutput));
-        app.setResizeWidth(reducedPreviewWidth);
-        app.setResizeHeight(reducedPreviewHeight);
-        app.setQuality(100);
+        app.setTargetWidth(reducedPreviewWidth);
+        app.setTargetHeight(reducedPreviewHeight);
+        app.setQuality(1.0);
         app.call();
 
         BufferedImage reducedPreview = ImageIO.read(new File(absolutePathOutput));
@@ -210,6 +213,97 @@ class ResizerAppTest {
         }
 
         assertEquals("Please check params!", generatedException.getMessage());
+        assertEquals(BadAttributesException.class, generatedException.getClass());
+    }
+
+    @Test
+    public void testResizeException() throws Exception
+    {
+        URL res = getClass().getClassLoader().getResource(TEST_IMAGE_SOURCE_NAME);
+        assert  res != null;
+
+        File file = Paths.get(res.toURI()).toFile();
+        String absolutePathInput = file.getAbsolutePath();
+
+        String absolutePathOutput = absolutePathInput.replaceFirst(TEST_IMAGE_SOURCE_NAME, TEST_IMAGE_TARGET_NAME);
+
+        ResizerApp app = new ResizerApp();
+        app.setInputFile(new File(absolutePathInput));
+        app.setOutputFile(new File(absolutePathOutput));
+        app.setTargetWidth(-3);
+        app.setTargetHeight(500);
+        BadAttributesException generatedException = null;
+
+        try
+        {
+            app.call();
+        }
+        catch (BadAttributesException e)
+        {
+            generatedException = e;
+        }
+
+        assertEquals("Parameter error! Parameter must be > 0 and < " + Integer.MAX_VALUE, generatedException.getMessage());
+        assertEquals(BadAttributesException.class, generatedException.getClass());
+    }
+
+    @Test
+    public void testCropException() throws Exception
+    {
+        URL res = getClass().getClassLoader().getResource(TEST_IMAGE_SOURCE_NAME);
+        assert  res != null;
+
+        File file = Paths.get(res.toURI()).toFile();
+        String absolutePathInput = file.getAbsolutePath();
+
+        String absolutePathOutput = absolutePathInput.replaceFirst(TEST_IMAGE_SOURCE_NAME, TEST_IMAGE_TARGET_NAME);
+
+        ResizerApp app = new ResizerApp();
+        app.setInputFile(new File(absolutePathInput));
+        app.setOutputFile(new File(absolutePathOutput));
+        app.setCrop(10, -3, 1, 1);
+        BadAttributesException generatedException = null;
+
+        try
+        {
+            app.call();
+        }
+        catch (BadAttributesException e)
+        {
+            generatedException = e;
+        }
+
+        assertEquals("Parameter error! Invalid crop parameters", generatedException.getMessage());
+        assertEquals(BadAttributesException.class, generatedException.getClass());
+    }
+
+    @Test
+    public void testFormatException() throws Exception
+    {
+        URL res = getClass().getClassLoader().getResource(TEST_IMAGE_SOURCE_NAME);
+        assert  res != null;
+
+        File file = Paths.get(res.toURI()).toFile();
+        String absolutePathInput = file.getAbsolutePath();
+
+        String absolutePathOutput = absolutePathInput.replaceFirst(TEST_IMAGE_SOURCE_NAME, TEST_IMAGE_TARGET_NAME);
+
+        ResizerApp app = new ResizerApp();
+        app.setInputFile(new File(absolutePathInput));
+        app.setOutputFile(new File(absolutePathOutput));
+        app.setFormat("EXE");
+        BadAttributesException generatedException = null;
+
+        try
+        {
+            app.call();
+        }
+        catch (BadAttributesException e)
+        {
+            generatedException = e;
+        }
+
+        assertEquals("Parameter error! Invalid image format", generatedException.getMessage());
         assertEquals(BadAttributesException.class, generatedException.getClass());
     }
 }
